@@ -111,7 +111,6 @@ class Encoder(nn.Module):
         output, (hidden, cell) = self.rnn(audio)
         return hidden, cell
 
-
 class Decoder(nn.Module):
     '''
     A unidirectional LSTM decoder
@@ -126,9 +125,8 @@ class Decoder(nn.Module):
 
         self.emb_dim = emb_dim
         self.hid_dim = hid_dim
-        self.output_dim = output_dim
+        self.output_dim = output_dim  # output_dim = vocab_size
         self.n_layers = n_layers
-        # output_dim = vocab_size
         self.embedding = torch.nn.Embedding(output_dim, emb_dim)
         self.rnn = torch.nn.LSTM(emb_dim, hid_dim, n_layers, batch_first=True)
         self.out = torch.nn.Linear(hid_dim, output_dim)
@@ -472,27 +470,11 @@ def calculate_loss(output, target, criterion, dynamic_oracles, mode):
         output = output.transpose(1, 2)
         loss = criterion(output, target)
     else:
-        # criterion is nn.KLDivLoss() - ensure inputs to loss are have been softmaxed
+        # criterion is nn.KLDivLoss() - inputs to loss must be softmaxed
         output = torch.nn.functional.softmax(output)
         ocd_target = [d.get_ocd_target_from_table(o, t) for (d, o, t) in zip(dynamic_oracles, output, target)]
         batched_target = torch.stack(ocd_target)
         target = torch.tensor(batched_target)
-
-        # batched_target = []
-        # for (d, t) in zip(dynamic_oracles, target):
-        #     seq_target = []
-        #     for i in range(t.size(0)):
-        #         optimal_target = d.optimal_completion(i, t)
-        #         target = nn.functional.one_hot(optimal_target.to(torch.int64), num_classes=output.size(2))
-        #         if target.dim() > 1:
-        #             target = sum(target)
-        #         target_softmax = nn.functional.softmax(target.float())
-        #         seq_target.append(target_softmax)
-        #     seq_target = torch.stack(seq_target)
-        #     batched_target.append(seq_target)
-        # batched_target = torch.stack(batched_target)
-        # target = torch.tensor(batched_target)
-
         loss = criterion(output, target)
     return loss
   
@@ -667,52 +649,6 @@ if __name__ == '__main__':
         "beta": args.beta
     }
 
-    run = wandb.init(project="10618-HW2-empirical2", config=wandb_config, reinit=True)
-
-    # # Create vocabulary
-    # vocab = ['<UNK>', '<SOS>', '<EOS>', '<PAD>', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-    #          'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-    #
-    # vocab_size = len(vocab)
-
-    # # Create dictionaries for translating between index and char and vice versa
-    # char_to_ix = defaultdict(lambda: None)
-    # ix_to_char = defaultdict(lambda: None)
-    #
-    # for ix, char in enumerate(vocab):
-    #     char_to_ix[char] = ix
-    #     ix_to_char[ix] = char
-    #
-    # x = ['<SOS>', 's', 'u', 'n', 'd', 'a', 'y', '<EOS>']
-    # y = ['<SOS>', 's', 'u', 'n', 'd', 'a', 'y', '<EOS>']
-    # x = ['a']
-    # y = ['b']
-    # y = torch.tensor([char_to_ix[c] for c in y])
-    # x = torch.tensor([char_to_ix[c] for c in x])
-    #
-    # y = F.one_hot(y, 30)
-    # y = F.softmax(y.float())
-
-
-    # dynamic_oracle = CERDynamicOracle()
-    # t = dynamic_oracle.get_ocd_target_from_table(y, x)
-
-    # dynamic_oracle.build_edit_dist_table(y, x)
-
-
-
-    # targets = []
-    # for i in range(len(x)+1):
-    #     optimal_targets = dynamic_oracle.optimal_completion(i, x)
-    #     target = [ix_to_char[int(t)] for t in optimal_targets]
-    #     # targets.append(target)
-    #     target = nn.functional.one_hot(optimal_targets.to(torch.int64), num_classes=30)
-    #     if target.dim() > 1:
-    #         target = sum(target)
-    #     target_softmax = nn.functional.softmax(target.float())
-    #     targets.append(target_softmax)
-    # targets = torch.stack(targets)
-
-
+    run = wandb.init(project="simple-asr", config=wandb_config, reinit=True)
 
     main(args.mode, args.beta)

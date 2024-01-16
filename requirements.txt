@@ -1,0 +1,9 @@
+# Python version
+python>=3.10
+
+# Other dependencies
+torch
+tqdm
+wandb
+nltk
+
