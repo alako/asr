@@ -1,0 +1,7 @@
+
+# Ignore logs and databases
+/wandb
+/asr_data
+
+# Ignore editor-specific files
+.idea/
